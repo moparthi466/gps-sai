@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model cuisine_types {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique(map: "name") @db.VarChar(50)
+  restaurants restaurants[]
+}
+
+model customers {
+  customer_id Int       @id @default(autoincrement())
+  first_name  String    @db.VarChar(50)
+  last_name   String    @db.VarChar(50)
+  birth_date  DateTime? @db.Date
+  phone       String?   @db.VarChar(50)
+  address     String    @db.VarChar(50)
+  city        String    @db.VarChar(50)
+  state       String    @db.Char(2)
+  points      Int       @default(0)
+  orders      orders[]
+}
+
+model menu_items {
+  id            Int          @id @default(autoincrement())
+  name          String       @db.VarChar(100)
+  price         Float        @db.Float
+  description   String?      @db.VarChar(255)
+  restaurant_id Int?
+  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "menu_items_ibfk_1")
+
+  @@index([restaurant_id], map: "restaurant_id")
+}
+
+model msp_groups {
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(100)
+  restaurants restaurants[]
+}
+
+model order_item_notes {
+  note_id    Int    @id
+  order_Id   Int
+  product_id Int
+  note       String @db.VarChar(255)
+}
+
+model order_items {
+  order_id   Int      @default(autoincrement())
+  product_id Int
+  quantity   Int
+  unit_price Decimal  @db.Decimal(4, 2)
+  orders     orders   @relation(fields: [order_id], references: [order_id], onDelete: NoAction, map: "fk_order_items_orders")
+  products   products @relation(fields: [product_id], references: [product_id], onDelete: NoAction, map: "fk_order_items_products")
+
+  @@id([order_id, product_id])
+  @@index([product_id], map: "fk_order_items_products_idx")
+}
+
+model order_statuses {
+  order_status_id Int      @id @db.TinyInt
+  name            String   @db.VarChar(50)
+  orders          orders[]
+}
+
+model orders {
+  order_id       Int            @id @default(autoincrement())
+  customer_id    Int
+  order_date     DateTime       @db.Date
+  status         Int            @default(1) @db.TinyInt
+  comments       String?        @db.VarChar(2000)
+  shipped_date   DateTime?      @db.Date
+  shipper_id     Int?           @db.SmallInt
+  order_items    order_items[]
+  customers      customers      @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, map: "fk_orders_customers")
+  order_statuses order_statuses @relation(fields: [status], references: [order_status_id], onDelete: NoAction, map: "fk_orders_order_statuses")
+  shippers       shippers?      @relation(fields: [shipper_id], references: [shipper_id], onDelete: NoAction, map: "fk_orders_shippers")
+
+  @@index([customer_id], map: "fk_orders_customers_idx")
+  @@index([status], map: "fk_orders_order_statuses_idx")
+  @@index([shipper_id], map: "fk_orders_shippers_idx")
+}
+
+model products {
+  product_id        Int           @id @default(autoincrement())
+  name              String        @db.VarChar(50)
+  quantity_in_stock Int
+  unit_price        Decimal       @db.Decimal(4, 2)
+  order_items       order_items[]
+}
+
+model restaurants {
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(100)
+  address       String?        @db.VarChar(255)
+  cuisine_id    Int?
+  group_id      Int?
+  created_at    DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?      @default(now()) @db.Timestamp(0)
+  menu_items    menu_items[]
+  cuisine_types cuisine_types? @relation(fields: [cuisine_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "restaurants_ibfk_1")
+  msp_groups    msp_groups?    @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "restaurants_ibfk_2")
+
+  @@index([cuisine_id], map: "cuisine_id")
+  @@index([group_id], map: "group_id")
+}
+
+model shippers {
+  shipper_id Int      @id @default(autoincrement()) @db.SmallInt
+  name       String   @db.VarChar(50)
+  orders     orders[]
+}
